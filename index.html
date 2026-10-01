@@ -33,6 +33,7 @@ label.l .req{color:var(--red);margin-left:2px}
 input[type=text],input[type=tel],input[type=email]{width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:3px;font:inherit;font-size:14px;color:var(--text);background:#fff;outline:none;transition:.15s}
 input:focus{border-color:var(--b);box-shadow:0 0 0 2px rgba(31,78,156,.15)}
 input.error{border-color:var(--red);box-shadow:0 0 0 2px rgba(204,51,51,.1)}
+.dob{display:grid;grid-template-columns:1.2fr 1fr 1.2fr;gap:8px}select{padding:10px 8px;border:1px solid #ccc;border-radius:3px;font:inherit;font-size:14px;background:#fff;width:100%}
 .err{color:var(--red);font-size:12.5px;margin-top:4px;min-height:1em}
 .opt{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--gray-line);border-radius:4px;margin-bottom:10px;cursor:pointer;transition:.15s}
 .opt:hover{border-color:var(--b)}.opt:has(input:checked){border-color:var(--b);background:var(--bl)}
@@ -78,7 +79,7 @@ footer{background:#2B2B2B;padding:18px 32px;text-align:center;font-size:11px;col
 
 <script>
 // ▼ วาง URL Web App (GAS) ของฟอร์มนี้
-const API_URL = "https://script.google.com/macros/s/AKfycbzaiqXYQTQPlFz_fcocsHYgCYiV4tHnAJ2SgSdMpYon979lgLJBqYAVrzm7jHzHOgLbLg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbymkOt9ZTvZ-kx0rFfq94bK0grGvcqKu2SEOC1oeUf_Unb7_G7NSfs53jz6LnjtdqXj4A/exec";
 // วันสอบ/รอบ/ตารางรับผล/รูป/เปิด-ปิดรับ แก้ที่ชีต Config, Dates, Rounds, ScorePickup (ไม่ต้องแก้โค้ด)
 const MAX_MB = 5;
 let CFG = null;
@@ -91,6 +92,13 @@ const nav = (next="ถัดไป",back=true) => `<div class="row">${back?'<but
 const img = u => u ? `<img class="pic" src="${esc(u)}" alt="">` : "";
 const radios = (n,list,cur) => list.map(o=>`<label class="opt"><input type="radio" name="${n}" value="${esc(o.v)}" ${cur===o.v?"checked":""}><div><b>${esc(o.l)}</b></div></label>`).join("");
 
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function dobVal(){
+  const M=$("#dobM").value,D=+$("#dobD").value,Y=+$("#dobY").value;
+  if(!M||!D||!Y)return "";
+  const mi=MON.indexOf(M),dt=new Date(Y,mi,D);
+  return dt.getMonth()===mi&&dt.getDate()===D?`${M} ${D}, ${Y}`:"";
+}
 function validId(id){
   if(!/^\d{13}$/.test(id))return false;
   let s=0;for(let i=0;i<12;i++)s+=(+id[i])*(13-i);
@@ -119,22 +127,22 @@ function consent(){
 }
 
 function info(){
-  const d=S.d;
+  const d=S.d,pm=(d.dob||"").match(/^(\w{3}) (\d{1,2}), (\d{4})$/)||[];
   $("#view").innerHTML=title("ข้อมูลของผู้สอบ")+`
   <div class="notice warn"><div class="nh">คำเตือน</div><div class="nb">กรุณากรอกข้อมูล<b>ของผู้สอบ</b>ด้วยความระมัดระวัง และตรวจสอบให้ถูกต้องก่อนส่งแบบฟอร์ม</div></div>
   <div class="field"><label class="l" for="email">อีเมล <span class="req">*</span></label><input id="email" type="email" autocomplete="email" value="${esc(d.email)}"><div class="err" id="e_email"></div></div>
   <div class="field"><label class="l" for="id">เลขบัตรประจำตัวประชาชน 13 หลัก ของผู้สอบ <span class="req">*</span></label><input id="id" type="text" inputmode="numeric" maxlength="13" autocomplete="off" value="${esc(d.id)}"><div class="hint">ตัวอย่าง 1123456789999</div><div class="err" id="e_id"></div></div>
   <div class="field"><label class="l" for="name">ชื่อ-นามสกุล ภาษาอังกฤษ ไม่ต้องใส่คำนำหน้า <span class="req">*</span></label><input id="name" type="text" autocomplete="name" value="${esc(d.name)}"><div class="hint">สะกดให้ตรงตามบัตรประชาชน ใบขับขี่สมาร์ทการ์ด หรือ Passport ตัวอย่าง Jaidee Meesuk</div><div class="err" id="e_name"></div></div>
   <div class="field"><label class="l">เพศ</label>${radios("gender",[{v:"Male",l:"Male"},{v:"Female",l:"Female"}],d.gender)}</div>
-  <div class="field"><label class="l" for="dob">วันเกิดของผู้สอบ (เดือน/วัน/ปี ค.ศ.) <span class="req">*</span></label><input id="dob" type="text" value="${esc(d.dob)}"><div class="hint">ตัวอย่าง Dec 25, 1999</div><div class="err" id="e_dob"></div></div>
+  <div class="field"><label class="l" for="dob">วันเกิดของผู้สอบ (เดือน/วัน/ปี ค.ศ.) <span class="req">*</span></label><div class="dob"><select id="dobM"><option value="">เดือน</option>${MON.map(m=>`<option ${pm[1]===m?"selected":""}>${m}</option>`).join("")}</select><select id="dobD"><option value="">วัน</option>${Array.from({length:31},(_,i)=>i+1).map(n=>`<option ${+pm[2]===n?"selected":""}>${n}</option>`).join("")}</select><select id="dobY"><option value="">ปี ค.ศ.</option>${Array.from({length:81},(_,i)=>new Date().getFullYear()-10-i).map(n=>`<option ${+pm[3]===n?"selected":""}>${n}</option>`).join("")}</select></div><div class="hint">เลือกเดือน วัน และปี ค.ศ. ระบบจะบันทึกในรูปแบบเดียวกัน เช่น Dec 25, 1999</div><div class="err" id="e_dob"></div></div>
   <div class="field"><label class="l" for="phone">เบอร์โทรติดต่อของผู้สอบ <span class="req">*</span></label><input id="phone" type="tel" inputmode="numeric" maxlength="10" value="${esc(d.phone)}"><div class="hint">ตัวอย่าง 0812345678</div><div class="err" id="e_phone"></div></div>`+nav();
   $("#next").onclick=async()=>{
-    const v={email:$("#email").value.trim(),id:$("#id").value.replace(/\D/g,""),name:$("#name").value.trim().replace(/\s+/g," "),gender:pick("gender"),dob:$("#dob").value.trim(),phone:$("#phone").value.replace(/\D/g,"")};
+    const v={email:$("#email").value.trim(),id:$("#id").value.replace(/\D/g,""),name:$("#name").value.trim().replace(/\s+/g," "),gender:pick("gender"),dob:dobVal(),phone:$("#phone").value.replace(/\D/g,"")};
     const e={
       email:/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)?"":"รูปแบบอีเมลไม่ถูกต้อง",
       id:validId(v.id)?"":"เลขบัตรประชาชนไม่ถูกต้อง (ต้องเป็นตัวเลข 13 หลัก)",
       name:/^[A-Za-z][A-Za-z .'-]*\s[A-Za-z][A-Za-z .'-]*$/.test(v.name)?"":"กรอกชื่อและนามสกุลเป็นภาษาอังกฤษ",
-      dob:v.dob?"":"กรุณากรอกวันเกิด",
+      dob:v.dob?"":"กรุณาเลือกวัน เดือน ปีเกิดให้ถูกต้อง",
       phone:/^0\d{9}$/.test(v.phone)?"":"เบอร์โทรต้องมี 10 หลัก เช่น 0812345678"};
     for(const k in e)setErr(k,e[k]);
     if(Object.values(e).some(Boolean))return;
@@ -246,14 +254,24 @@ function done(){
   $("#view").innerHTML=`<div class="done"><div class="tick">✓</div><p><b>ส่งแบบฟอร์มยืนยันการจองสอบเรียบร้อยแล้ว</b><br>ขอบคุณที่ยืนยันการจองสอบ สามารถปิดหน้านี้ได้</p></div>`;
 }
 
-(async()=>{
-  try{
-    const j=await (await fetch(API_URL)).json();CFG=j.config;
-    $("#ttl").textContent=CFG.title;$("#sub").textContent=CFG.subtitle||"";
-    if(!CFG.open){$("#bar").style.display="none";$("#view").innerHTML=`<div class="done"><p><b>${esc(CFG.closedMessage)}</b></p></div>`;return}
-    render();
-  }catch(_){$("#view").innerHTML='<div class="ve">โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง</div>'}
-})();
+async function load(){
+  $("#view").textContent="กำลังโหลด...";
+  let why="";
+  for(let i=0;i<2;i++){                       // ลองซ้ำ 1 ครั้ง (GAS เริ่มทำงานครั้งแรกอาจช้า)
+    const ac=new AbortController(),t=setTimeout(()=>ac.abort(),20000);
+    try{
+      const r=await fetch(API_URL,{signal:ac.signal});clearTimeout(t);
+      const j=await r.json();
+      if(!j.ok)throw new Error(j.error||"server error");
+      CFG=j.config;
+      $("#ttl").textContent=CFG.title;$("#sub").textContent=CFG.subtitle||"";
+      if(!CFG.open){$("#bar").style.display="none";$("#view").innerHTML=`<div class="done"><p><b>${esc(CFG.closedMessage)}</b></p></div>`;return}
+      return render();
+    }catch(e){clearTimeout(t);why=e.name==="AbortError"?"ระบบตอบกลับช้าเกิน 20 วินาที":String(e.message||e);console.error(e)}
+  }
+  $("#view").innerHTML=`<div class="ve">โหลดข้อมูลไม่สำเร็จ (${esc(why)})</div><div class="row"><button class="pri" onclick="load()">ลองใหม่</button></div>`;
+}
+load();
 </script>
 </body>
 </html>
